@@ -1,0 +1,14 @@
+Local validation performed in the provided build environment
+
+PASS: python3 tools/validate-repo.py
+  84 patches passed repository syntax/sequence checks; 17 Python tools and 7 shell scripts passed syntax checks.
+
+PASS: python3 tools/test_mkadt_on7xelte.py bringup/j7-hello/boot.img
+  Extracted Samsung DTBH v2 entry 1; parsed 8 Cortex-A53 MPIDRs, 2 RAM banks, 12 reserved intervals, GICv2 MMIO ranges and 26 MHz timer; generated and round-tripped an 8,944-byte ADT.
+
+PASS: Clang AArch64 bare-metal build of bringup/j7-hello and Samsung boot-image pack/unpack round-trip.
+  This is the hello hardware probe, not XNU. The probe has not been run on the physical phone.
+
+NOT RUN: full XNU compile. The XNU source is fetched by the macOS GitHub Actions workflow; this environment has no network access and is not a macOS/Xcode XNU build environment. Patches 0082-0084 are new and must be compile-checked by that workflow before any boot attempt.
+
+NOT VERIFIED: ADT behavior in XNU, actual bootloader handoff, GICv2 timer delivery, display/serial output, storage, iOS userspace, or physical hardware execution.

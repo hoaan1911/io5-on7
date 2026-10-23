@@ -1,0 +1,5 @@
+research/on7xelte-stock-rev1.adt: 8944 bytes Apple ADT serialization
+source={'version': 2, 'count': 2, 'index': 1, 'chip': 7870, 'platform': 20646, 'subtype': 561349850, 'rev': 1, 'rev_end': 1}; board='Samsung ON7XE LTE SWA rev01 board based on Exynos7870'; compatible=['samsung, ON7XE LTE SWA OPEN 01', 'samsung,exynos7870']
+CPUs=8; RAM=[('0x40000000', '0x3e400000'), ('0x80000000', '0x80000000')]; reserved=12
+contiguous XNU arena=0xb0000000+0x3ffff000
+GICv2 regs=[('0x104e1000', '0x1000'), ('0x104e2000', '0x1000'), ('0x104e4000', '0x2000'), ('0x104e6000', '0x2000')]; timer=26000000 Hz
