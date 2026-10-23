@@ -1,0 +1,32 @@
+
+name: J7 Prime Bring-up Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install ARM64 toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu python3
+
+      - name: Show project files
+        run: |
+          echo "Checking repository structure"
+          find . -maxdepth 3 -type f | sort | head -300
+
+      - name: Check XNU patches and porting notes
+        run: |
+          echo "=== Porting status ==="
+          cat ON7XELTE_PORT_STATUS.md
+          echo "=== Patch files ==="
+          find xnu -type f | sort | head -300
