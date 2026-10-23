@@ -1,0 +1,29 @@
+
+name: XNU Build Environment Check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: macos-14
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Inspect XNU project
+        run: |
+          echo "Checking the XNU source and port patches"
+          find xnu -maxdepth 3 -type f | sort | head -300
+          echo "Checking the J7 Prime platform files"
+          find . -iname '*on7xelte*' -o -iname '*j7*' | sort
+
+      - name: Check available build tools
+        run: |
+          sw_vers
+          clang --version
+          xcodebuild -version || true
+          git --version
