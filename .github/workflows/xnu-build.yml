@@ -12,39 +12,42 @@ jobs:
     runs-on: macos-14
     timeout-minutes: 180
 
+    env:
+      MACOS_VERSION: "14.5"
+      ARCH_CONFIG: ARM64
+      MACHINE_CONFIG: VMAPPLE
+      KERNEL_CONFIG: DEVELOPMENT
+      NIX_BUILD_CORES: "3"
+
     steps:
-      - name: Checkout J7 Prime project
+      - name: Checkout project
         uses: actions/checkout@v4
 
-      - name: Install build dependencies
+      - name: Install dependencies
         run: |
           brew install jq gum cmake ninja
           xcodebuild -version
           clang --version
 
-      - name: Fetch XNU build system
+      - name: Fetch XNU builder
         run: |
           git clone --depth 1 \
             https://github.com/blacktop/darwin-xnu-build.git \
-            ../darwin-xnu-build
+            darwin-xnu-build
 
-      - name: Compile ARM64 XNU
-        working-directory: ../darwin-xnu-build
-        env:
-          ARCH_CONFIG: ARM64
-          MACHINE_CONFIG: VMAPPLE
-          KERNEL_CONFIG: DEVELOPMENT
+      - name: Compile XNU
         run: |
+          cd darwin-xnu-build
           set -o pipefail
           ./build.sh 2>&1 | tee xnu-build.log
 
-      - name: Upload build output and log
+      - name: Upload build logs and outputs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: xnu-arm64-baseline
           path: |
-            ../darwin-xnu-build/build/**
-            ../darwin-xnu-build/xnu-build.log
+            darwin-xnu-build/xnu-build.log
+            darwin-xnu-build/build/**
           if-no-files-found: warn
           retention-days: 14
