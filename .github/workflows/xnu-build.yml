@@ -9,6 +9,7 @@ permissions:
 
 jobs:
   build-xnu:
+    # Generic Apple VM target only — NOT a J7 Prime kernel.
     runs-on: macos-14
     timeout-minutes: 180
 
@@ -20,34 +21,78 @@ jobs:
       NIX_BUILD_CORES: "3"
 
     steps:
-      - name: Checkout project
+      - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Check build environment
         run: |
-          brew install jq gum cmake ninja
+          set -eu
+          sw_vers
           xcodebuild -version
           clang --version
 
-      - name: Fetch XNU builder
+      - name: Install dependencies
         run: |
+          set -eu
+          brew install jq gum cmake ninja
+
+      - name: Fetch XNU build helper
+        run: |
+          set -eu
           git clone --depth 1 \
             https://github.com/blacktop/darwin-xnu-build.git \
             darwin-xnu-build
+          git -C darwin-xnu-build rev-parse HEAD \
+            | tee upstream-builder-commit.txt
 
       - name: Compile XNU
+        working-directory: darwin-xnu-build
+        shell: bash
         run: |
-          cd darwin-xnu-build
-          set -o pipefail
-          ./build.sh 2>&1 | tee xnu-build.log
+          set -euo pipefail
+          ./build.sh 2>&1 | tee ../xnu-build.log
 
-      - name: Upload build logs and outputs
+      - name: Verify kernel output
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p verification
+          ROOT="darwin-xnu-build/build"
+          EXPECTED="$ROOT/xnu.obj/DEVELOPMENT_ARM64_VMAPPLE/kernel.development.vmapple"
+          KERNEL=""
+
+          if [ -f "$EXPECTED" ]; then
+            KERNEL="$EXPECTED"
+          elif [ -d "$ROOT" ]; then
+            KERNEL="$(find "$ROOT" -type f -name 'kernel*' -print -quit || true)"
+          fi
+
+          if [ -n "$KERNEL" ] && [ -f "$KERNEL" ]; then
+            {
+              echo "Found: $KERNEL"
+              ls -lh "$KERNEL"
+              file "$KERNEL"
+              shasum -a 256 "$KERNEL"
+            } | tee verification/kernel-report.txt
+            cp "$KERNEL" verification/
+          else
+            echo "No kernel output found." \
+              | tee verification/kernel-report.txt
+            if [ -d "$ROOT" ]; then
+              find "$ROOT" -type f -name 'kernel*' -print \
+                | head -100 >> verification/kernel-report.txt || true
+            fi
+          fi
+
+      - name: Upload logs and build outputs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: xnu-arm64-baseline
+          name: xnu-arm64-baseline-${{ github.run_number }}
           path: |
-            darwin-xnu-build/xnu-build.log
+            xnu-build.log
+            upstream-builder-commit.txt
+            verification/**
             darwin-xnu-build/build/**
           if-no-files-found: warn
           retention-days: 14
