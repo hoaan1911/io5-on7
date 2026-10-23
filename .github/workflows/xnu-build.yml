@@ -1,5 +1,5 @@
 
-name: XNU Build Environment Check
+name: Build XNU ARM64 baseline
 
 on:
   workflow_dispatch:
@@ -8,22 +8,43 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  build-xnu:
     runs-on: macos-14
+    timeout-minutes: 180
+
     steps:
-      - name: Checkout source
+      - name: Checkout J7 Prime project
         uses: actions/checkout@v4
 
-      - name: Inspect XNU project
+      - name: Install build dependencies
         run: |
-          echo "Checking the XNU source and port patches"
-          find xnu -maxdepth 3 -type f | sort | head -300
-          echo "Checking the J7 Prime platform files"
-          find . -iname '*on7xelte*' -o -iname '*j7*' | sort
-
-      - name: Check available build tools
-        run: |
-          sw_vers
+          brew install jq gum cmake ninja
+          xcodebuild -version
           clang --version
-          xcodebuild -version || true
-          git --version
+
+      - name: Fetch XNU build system
+        run: |
+          git clone --depth 1 \
+            https://github.com/blacktop/darwin-xnu-build.git \
+            ../darwin-xnu-build
+
+      - name: Compile ARM64 XNU
+        working-directory: ../darwin-xnu-build
+        env:
+          ARCH_CONFIG: ARM64
+          MACHINE_CONFIG: VMAPPLE
+          KERNEL_CONFIG: DEVELOPMENT
+        run: |
+          set -o pipefail
+          ./build.sh 2>&1 | tee xnu-build.log
+
+      - name: Upload build output and log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xnu-arm64-baseline
+          path: |
+            ../darwin-xnu-build/build/**
+            ../darwin-xnu-build/xnu-build.log
+          if-no-files-found: warn
+          retention-days: 14
